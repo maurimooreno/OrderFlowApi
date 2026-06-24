@@ -1,5 +1,6 @@
 using OrderFlow.Application.Operations.Interfaces;
 using OrderFlow.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace OrderFlow.Persistence.Repositories;
 
@@ -11,5 +12,12 @@ public class OrderOperationRepository(OrderFlowDbContext dbContext) : IOrderOper
     {
         await _dbContext.OrderOperations.AddAsync(orderOperation, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<OrderOperation?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _dbContext.OrderOperations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(orderOperation => orderOperation.Id == id, cancellationToken);
     }
 }
