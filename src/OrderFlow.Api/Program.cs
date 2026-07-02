@@ -1,5 +1,6 @@
 using OrderFlow.Application.Operations.CreateOperation;
 using OrderFlow.Application.Operations.GetOperation;
+using OrderFlow.Infrastructure;
 using OrderFlow.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ var connectionString = builder.Configuration.GetConnectionString("OrderFlowDb")
     ?? throw new InvalidOperationException("Connection string 'OrderFlowDb' was not found.");
 
 builder.Services.AddPersistence(connectionString);
+builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 
