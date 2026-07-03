@@ -20,4 +20,15 @@ public class OrderOperationRepository(OrderFlowDbContext dbContext) : IOrderOper
             .AsNoTracking()
             .FirstOrDefaultAsync(orderOperation => orderOperation.Id == id, cancellationToken);
     }
+
+    public async Task<OrderOperation?> GetForUpdateByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _dbContext.OrderOperations
+            .FirstOrDefaultAsync(orderOperation => orderOperation.Id == id, cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }
