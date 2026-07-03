@@ -3,7 +3,7 @@ using OrderFlow.Application.Operations.Interfaces;
 
 namespace OrderFlow.Infrastructure.Messaging;
 
-public class InMemoryQueuePublisher : IOperationQueuePublisher
+public class InMemoryQueuePublisher : IOperationQueuePublisher, IOperationQueueConsumer
 {
     private readonly ConcurrentQueue<Guid> _operationIds = new();
 
@@ -14,5 +14,15 @@ public class InMemoryQueuePublisher : IOperationQueuePublisher
         _operationIds.Enqueue(operationId);
 
         return Task.CompletedTask;
+    }
+
+    public Task<Guid?> DequeueAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.FromResult(
+            _operationIds.TryDequeue(out var operationId)
+                ? operationId
+                : (Guid?)null);
     }
 }

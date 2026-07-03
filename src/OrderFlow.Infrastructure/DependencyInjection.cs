@@ -8,7 +8,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
-        services.AddSingleton<IOperationQueuePublisher, InMemoryQueuePublisher>();
+        services.AddSingleton<InMemoryQueuePublisher>();
+        services.AddSingleton<IOperationQueuePublisher>(serviceProvider =>
+            serviceProvider.GetRequiredService<InMemoryQueuePublisher>());
+        services.AddSingleton<IOperationQueueConsumer>(serviceProvider =>
+            serviceProvider.GetRequiredService<InMemoryQueuePublisher>());
 
         return services;
     }

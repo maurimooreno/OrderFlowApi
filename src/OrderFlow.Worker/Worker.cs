@@ -1,16 +1,24 @@
+using OrderFlow.Application.Operations.Interfaces;
+
 namespace OrderFlow.Worker;
 
-public class Worker(ILogger<Worker> logger) : BackgroundService
+public class Worker(
+    ILogger<Worker> logger,
+    IOperationQueueConsumer operationQueueConsumer) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (logger.IsEnabled(LogLevel.Information))
+            var operationId = await operationQueueConsumer.DequeueAsync(stoppingToken);
+
+            if (operationId is null)
             {
-                logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                await Task.Delay(1000, stoppingToken);
+                continue;
             }
-            await Task.Delay(1000, stoppingToken);
+
+            logger.LogInformation("Operation message consumed: {OperationId}", operationId);
         }
     }
 }
