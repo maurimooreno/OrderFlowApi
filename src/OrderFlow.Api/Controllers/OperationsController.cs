@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OrderFlow.Application.Operations.CreateOperation;
 using OrderFlow.Application.Operations.GetOperation;
+using OrderFlow.Application.Operations.RetryOperation;
 using OrderFlow.Application.Operations.Requests;
 using OrderFlow.Application.Operations.Responses;
 
@@ -10,10 +11,12 @@ namespace OrderFlow.Api.Controllers;
 [Route("api/operations")]
 public class OperationsController(
     CreateOperationHandler createOperationHandler,
-    GetOperationHandler getOperationHandler) : ControllerBase
+    GetOperationHandler getOperationHandler,
+    RetryOperationHandler retryOperationHandler) : ControllerBase
 {
     private readonly CreateOperationHandler _createOperationHandler = createOperationHandler;
     private readonly GetOperationHandler _getOperationHandler = getOperationHandler;
+    private readonly RetryOperationHandler _retryOperationHandler = retryOperationHandler;
 
     [HttpPost]
     [ProducesResponseType(typeof(CreateOperationResponse), StatusCodes.Status201Created)]
@@ -60,5 +63,27 @@ public class OperationsController(
             result.ProcessedAtUtc);
 
         return Ok(response);
+    }
+
+    [HttpPost("{id:guid}/retry")]
+    [ProducesResponseType(typeof(OperationStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<OperationStatusResponse>> RetryAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _retryOperationHandler.HandleAsync(id, cancellationToken);
+
+        return result.ResultStatus switch
+        {
+            RetryOperationStatus.NotFound => NotFound(),
+            RetryOperationStatus.InvalidStatus => Conflict(),
+            _ => Ok(new OperationStatusResponse(
+                result.Id!.Value,
+                result.Status!.Value,
+                result.UpdatedAtUtc,
+                null))
+        };
     }
 }
