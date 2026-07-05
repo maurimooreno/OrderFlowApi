@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+.git/
+.agents/
+.codex/
+docs/
+README.md
