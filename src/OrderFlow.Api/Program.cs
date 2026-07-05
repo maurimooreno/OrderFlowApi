@@ -1,5 +1,6 @@
 using OrderFlow.Application.Operations.CreateOperation;
 using OrderFlow.Application.Operations.GetOperation;
+using OrderFlow.Application.Operations.GetOperationStatus;
 using OrderFlow.Application.Operations.RetryOperation;
 using OrderFlow.Infrastructure;
 using OrderFlow.Persistence;
@@ -10,6 +11,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddScoped<CreateOperationHandler>();
 builder.Services.AddScoped<GetOperationHandler>();
+builder.Services.AddScoped<GetOperationStatusHandler>();
 builder.Services.AddScoped<RetryOperationHandler>();
 
 var connectionString = builder.Configuration.GetConnectionString("OrderFlowDb")

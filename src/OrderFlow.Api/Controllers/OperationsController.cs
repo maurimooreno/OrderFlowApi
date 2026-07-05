@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OrderFlow.Application.Operations.CreateOperation;
 using OrderFlow.Application.Operations.GetOperation;
+using OrderFlow.Application.Operations.GetOperationStatus;
 using OrderFlow.Application.Operations.RetryOperation;
 using OrderFlow.Application.Operations.Requests;
 using OrderFlow.Application.Operations.Responses;
@@ -12,10 +13,12 @@ namespace OrderFlow.Api.Controllers;
 public class OperationsController(
     CreateOperationHandler createOperationHandler,
     GetOperationHandler getOperationHandler,
+    GetOperationStatusHandler getOperationStatusHandler,
     RetryOperationHandler retryOperationHandler) : ControllerBase
 {
     private readonly CreateOperationHandler _createOperationHandler = createOperationHandler;
     private readonly GetOperationHandler _getOperationHandler = getOperationHandler;
+    private readonly GetOperationStatusHandler _getOperationStatusHandler = getOperationStatusHandler;
     private readonly RetryOperationHandler _retryOperationHandler = retryOperationHandler;
 
     [HttpPost]
@@ -63,6 +66,25 @@ public class OperationsController(
             result.ProcessedAtUtc);
 
         return Ok(response);
+    }
+
+    [HttpGet("{id:guid}/status")]
+    [ProducesResponseType(typeof(OperationStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<OperationStatusResponse>> GetStatusByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _getOperationStatusHandler.HandleAsync(id, cancellationToken);
+
+        if (result is null)
+            return NotFound();
+
+        return Ok(new OperationStatusResponse(
+            result.Id,
+            result.Status,
+            result.UpdatedAtUtc,
+            result.ProcessedAtUtc));
     }
 
     [HttpPost("{id:guid}/retry")]
