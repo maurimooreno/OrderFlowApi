@@ -16,7 +16,7 @@ public sealed record CreateOperationRequest(
     [StringLength(254)]
     string CustomerEmail,
 
-    [Range(typeof(decimal), "0.01", "9999999999999999.99")]
+    [Range(0.01, 9999999999999999.99)]
     decimal TotalAmount,
 
     [Required]
