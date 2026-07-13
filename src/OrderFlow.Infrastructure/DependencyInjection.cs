@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OrderFlow.Application.Operations.Interfaces;
 using OrderFlow.Infrastructure.ExternalServices;
@@ -7,8 +8,20 @@ namespace OrderFlow.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
+        var serviceBusOptions = configuration
+            .GetSection(ServiceBusOptions.SectionName)
+            .Get<ServiceBusOptions>()
+            ?? throw new InvalidOperationException("ServiceBus configuration section is required.");
+
+        serviceBusOptions.Validate();
+
+        services.AddSingleton(serviceBusOptions);
+        services.AddSingleton<AzureServiceBusQueuePublisher>();
+        services.AddSingleton<AzureServiceBusQueueConsumer>();
         services.AddSingleton<InMemoryQueuePublisher>();
         services.AddSingleton<IOperationQueuePublisher>(serviceProvider =>
             serviceProvider.GetRequiredService<InMemoryQueuePublisher>());

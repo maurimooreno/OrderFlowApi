@@ -12,13 +12,15 @@ public class Worker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var operationId = await operationQueueConsumer.DequeueAsync(stoppingToken);
+            var message = await operationQueueConsumer.DequeueAsync(stoppingToken);
 
-            if (operationId is null)
+            if (message is null)
             {
                 await Task.Delay(1000, stoppingToken);
                 continue;
             }
+
+            var operationId = message.OperationId;
 
             try
             {
@@ -27,7 +29,7 @@ public class Worker(
 
                 logger.LogInformation("Operation processing started: {OperationId}", operationId);
 
-                var processed = await handler.HandleAsync(operationId.Value, stoppingToken);
+                var processed = await handler.HandleAsync(operationId, stoppingToken);
 
                 if (processed)
                     logger.LogInformation("Operation processing finished: {OperationId}", operationId);

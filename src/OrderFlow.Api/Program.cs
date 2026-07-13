@@ -18,7 +18,7 @@ var connectionString = builder.Configuration.GetConnectionString("OrderFlowDb")
     ?? throw new InvalidOperationException("Connection string 'OrderFlowDb' was not found.");
 
 builder.Services.AddPersistence(connectionString);
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
