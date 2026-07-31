@@ -12,7 +12,22 @@ public class Worker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var message = await operationQueueConsumer.DequeueAsync(stoppingToken);
+            IOperationQueueMessage? message;
+
+            try
+            {
+                message = await operationQueueConsumer.DequeueAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Operation message consumption failed unexpectedly.");
+                await Task.Delay(1000, stoppingToken);
+                continue;
+            }
 
             if (message is null)
             {
@@ -32,9 +47,17 @@ public class Worker(
                 var processed = await handler.HandleAsync(operationId, stoppingToken);
 
                 if (processed)
+                {
+                    await message.CompleteAsync(stoppingToken);
+
                     logger.LogInformation("Operation processing finished: {OperationId}", operationId);
+                }
                 else
+                {
+                    await message.DeadLetterAsync("OperationNotFound", stoppingToken);
+
                     logger.LogWarning("Operation message ignored because operation was not found: {OperationId}", operationId);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -43,6 +66,22 @@ public class Worker(
             catch (Exception ex)
             {
                 logger.LogError(ex, "Operation processing failed unexpectedly: {OperationId}", operationId);
+
+                try
+                {
+                    await message.AbandonAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception abandonException)
+                {
+                    logger.LogError(
+                        abandonException,
+                        "Operation message could not be abandoned after processing failure: {OperationId}",
+                        operationId);
+                }
             }
         }
     }

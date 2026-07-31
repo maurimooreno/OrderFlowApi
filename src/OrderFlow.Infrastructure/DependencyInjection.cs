@@ -20,13 +20,25 @@ public static class DependencyInjection
         serviceBusOptions.Validate();
 
         services.AddSingleton(serviceBusOptions);
-        services.AddSingleton<AzureServiceBusQueuePublisher>();
-        services.AddSingleton<AzureServiceBusQueueConsumer>();
-        services.AddSingleton<InMemoryQueuePublisher>();
-        services.AddSingleton<IOperationQueuePublisher>(serviceProvider =>
-            serviceProvider.GetRequiredService<InMemoryQueuePublisher>());
-        services.AddSingleton<IOperationQueueConsumer>(serviceProvider =>
-            serviceProvider.GetRequiredService<InMemoryQueuePublisher>());
+
+        if (serviceBusOptions.Provider == ServiceBusOptions.InMemoryProvider)
+        {
+            services.AddSingleton<InMemoryQueuePublisher>();
+            services.AddSingleton<IOperationQueuePublisher>(serviceProvider =>
+                serviceProvider.GetRequiredService<InMemoryQueuePublisher>());
+            services.AddSingleton<IOperationQueueConsumer>(serviceProvider =>
+                serviceProvider.GetRequiredService<InMemoryQueuePublisher>());
+        }
+        else
+        {
+            services.AddSingleton<AzureServiceBusQueuePublisher>();
+            services.AddSingleton<AzureServiceBusQueueConsumer>();
+            services.AddSingleton<IOperationQueuePublisher>(serviceProvider =>
+                serviceProvider.GetRequiredService<AzureServiceBusQueuePublisher>());
+            services.AddSingleton<IOperationQueueConsumer>(serviceProvider =>
+                serviceProvider.GetRequiredService<AzureServiceBusQueueConsumer>());
+        }
+
         services.AddScoped<IExternalOperationProcessor, SimulatedExternalOperationProcessor>();
 
         return services;
