@@ -24,11 +24,24 @@ public class OrderOperationRepository(OrderFlowDbContext dbContext) : IOrderOper
     public async Task<OrderOperation?> GetForUpdateByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _dbContext.OrderOperations
+            .Include(orderOperation => orderOperation.History)
             .FirstOrDefaultAsync(orderOperation => orderOperation.Id == id, cancellationToken);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
+        MarkAppendedHistoryAsAdded();
+
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private void MarkAppendedHistoryAsAdded()
+    {
+        foreach (var entry in _dbContext.ChangeTracker.Entries<OrderOperationHistory>())
+        {
+            // History is append-only. EF discovers new Guid-keyed collection members as Modified.
+            if (entry.State == EntityState.Modified)
+                entry.State = EntityState.Added;
+        }
     }
 }
