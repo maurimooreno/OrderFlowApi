@@ -15,13 +15,14 @@ El MVP implementa:
 - Retry manual de operaciones fallidas.
 - Persistencia en SQL Server con EF Core.
 - Logging estructurado con `ILogger<T>`.
-- Dockerfiles para API y Worker.
+- Azure Service Bus Emulator como broker local compartido.
+- Docker Compose para API, Worker y el emulador.
 
 Fuera de alcance del MVP:
 
 - Frontend.
 - Autenticacion compleja.
-- Mensajeria real con RabbitMQ, Kafka, Azure Service Bus u otros brokers.
+- Azure Service Bus real en cloud y brokers distintos del emulador.
 - Infraestructura cloud real.
 - Observabilidad avanzada.
 
@@ -43,14 +44,14 @@ Responsabilidades principales:
 - `OrderFlow.Api`: endpoints REST, configuracion y dependency injection.
 - `OrderFlow.Application`: casos de uso, DTOs, contratos e interfaces.
 - `OrderFlow.Domain`: entidades, enums y reglas de negocio.
-- `OrderFlow.Infrastructure`: cola simulada e integracion externa simulada.
+- `OrderFlow.Infrastructure`: mensajeria Azure Service Bus o in-memory seleccionable e integracion externa simulada.
 - `OrderFlow.Persistence`: `DbContext`, configuraciones EF Core, migraciones y repositorios.
 - `OrderFlow.Worker`: consumo de mensajes y procesamiento asincronico.
 
 Flujo principal:
 
 ```text
-Client -> API REST -> SQL Server -> In-memory queue -> Worker -> Simulated external system
+Client -> API REST -> SQL Server -> Azure Service Bus Emulator -> Worker -> Simulated external system
 ```
 
 ## Tecnologias
@@ -63,6 +64,7 @@ Client -> API REST -> SQL Server -> In-memory queue -> Worker -> Simulated exter
 - SQL Server
 - Swagger / OpenAPI
 - Docker
+- Azure Service Bus Emulator
 
 ## Requisitos
 
@@ -214,20 +216,24 @@ docker build -f .\src\OrderFlow.Api\Dockerfile -t orderflow-api .
 docker build -f .\src\OrderFlow.Worker\Dockerfile -t orderflow-worker .
 ```
 
+Para el entorno local MVP 2, definir `ACCEPT_EULA`, `MSSQL_SA_PASSWORD` y `ORDERFLOW_DB_CONNECTION_STRING`, y ejecutar:
+
+```powershell
+docker compose up --build
+```
+
+La base `OrderFlowDb` permanece externa al Compose y debe tener las migraciones aplicadas.
+
 ## Limitaciones conocidas
 
-- La cola actual es in-memory.
-- Si API y Worker corren como procesos o contenedores separados, no comparten mensajes entre si.
-- No se incluye Docker Compose.
-- SQL Server debe estar disponible fuera de los contenedores o configurado manualmente.
+- El emulador es solo para desarrollo local; no es un broker de produccion.
+- `OrderFlowDb` debe estar disponible fuera de los contenedores y con migraciones aplicadas.
 - No hay autenticacion avanzada.
 - No hay integraciones reales con terceros.
 
 ## Proximas mejoras posibles
 
-- Reemplazar la cola in-memory por un broker real.
 - Agregar autenticacion.
 - Agregar tests automatizados.
 - Agregar manejo global de errores.
 - Mejorar observabilidad.
-- Agregar Docker Compose cuando sea parte del alcance.
