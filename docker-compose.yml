@@ -12,6 +12,7 @@ services:
       ServiceBus__Provider: AzureServiceBus
       ServiceBus__ConnectionString: Endpoint=sb://servicebus-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;
       ServiceBus__QueueName: order-operations
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     depends_on:
       - servicebus-emulator
     networks:

@@ -1,34 +1,34 @@
 # OrderFlow
 
-OrderFlow es una plataforma de integracion de operaciones construida con .NET. Permite recibir operaciones desde sistemas externos, persistirlas, consultar su estado, procesarlas de forma asincronica y reintentar operaciones fallidas.
+OrderFlow is an operations integration platform built with .NET. It receives operations from external systems, persists them, exposes their status, processes them asynchronously, and allows failed operations to be retried.
 
-El proyecto esta pensado como portfolio profesional de backend, APIs REST, integracion entre sistemas, procesamiento en segundo plano, SQL Server, Entity Framework Core, Docker y arquitectura empresarial simple.
+The project is designed as a professional backend portfolio piece covering REST APIs, system integration, background processing, SQL Server, Entity Framework Core, Docker, and a straightforward enterprise architecture.
 
-## Alcance
+## Scope
 
-El MVP implementa:
+The MVP includes:
 
-- Creacion de operaciones.
-- Consulta completa de una operacion.
-- Consulta de estado.
-- Procesamiento asincronico mediante Worker.
-- Retry manual de operaciones fallidas.
-- Persistencia en SQL Server con EF Core.
-- Logging estructurado con `ILogger<T>`.
-- Azure Service Bus Emulator como broker local compartido.
-- Docker Compose para API, Worker y el emulador.
+- Operation creation.
+- Full operation retrieval.
+- Operation status retrieval.
+- Asynchronous processing through a Worker.
+- Manual retry of failed operations.
+- SQL Server persistence with EF Core.
+- Structured logging with `ILogger<T>`.
+- Azure Service Bus Emulator as the shared local broker.
+- Docker Compose for the API, Worker, and emulator.
 
-Fuera de alcance del MVP:
+Out of scope for the MVP:
 
 - Frontend.
-- Autenticacion compleja.
-- Azure Service Bus real en cloud y brokers distintos del emulador.
-- Infraestructura cloud real.
-- Observabilidad avanzada.
+- Advanced authentication.
+- Cloud Azure Service Bus and brokers other than the emulator.
+- Cloud infrastructure.
+- Advanced observability.
 
-## Arquitectura
+## Architecture
 
-La solucion utiliza una Clean Architecture simplificada:
+The solution uses a simplified Clean Architecture:
 
 ```text
 OrderFlow.Api
@@ -39,22 +39,22 @@ OrderFlow.Persistence
 OrderFlow.Worker
 ```
 
-Responsabilidades principales:
+Main responsibilities:
 
-- `OrderFlow.Api`: endpoints REST, configuracion y dependency injection.
-- `OrderFlow.Application`: casos de uso, DTOs, contratos e interfaces.
-- `OrderFlow.Domain`: entidades, enums y reglas de negocio.
-- `OrderFlow.Infrastructure`: mensajeria Azure Service Bus o in-memory seleccionable e integracion externa simulada.
-- `OrderFlow.Persistence`: `DbContext`, configuraciones EF Core, migraciones y repositorios.
-- `OrderFlow.Worker`: consumo de mensajes y procesamiento asincronico.
+- `OrderFlow.Api`: REST endpoints, configuration, and dependency injection.
+- `OrderFlow.Application`: use cases, DTOs, contracts, and interfaces.
+- `OrderFlow.Domain`: entities, enums, and business rules.
+- `OrderFlow.Infrastructure`: selectable Azure Service Bus or in-memory messaging, plus a simulated external integration.
+- `OrderFlow.Persistence`: `DbContext`, EF Core mappings, migrations, and repositories.
+- `OrderFlow.Worker`: message consumption and asynchronous processing.
 
-Flujo principal:
+Main flow:
 
 ```text
-Client -> API REST -> SQL Server -> Azure Service Bus Emulator -> Worker -> Simulated external system
+Client -> REST API -> SQL Server -> Azure Service Bus Emulator -> Worker -> Simulated external system
 ```
 
-## Tecnologias
+## Technology Stack
 
 - .NET 10
 - C#
@@ -62,25 +62,25 @@ Client -> API REST -> SQL Server -> Azure Service Bus Emulator -> Worker -> Simu
 - Worker Service
 - Entity Framework Core
 - SQL Server
-- Swagger / OpenAPI
+- OpenAPI
 - Docker
 - Azure Service Bus Emulator
 
-## Requisitos
+## Prerequisites
 
 - .NET 10 SDK
-- SQL Server disponible localmente o remoto
-- `dotnet-ef` instalado para migraciones
-- Docker, opcional para ejecucion en contenedores
+- A local or remote SQL Server instance
+- `dotnet-ef` installed for migrations
+- Docker for container-based execution
 
-## Configuracion
+## Configuration
 
-Configurar la cadena de conexion en:
+Configure the connection string in:
 
 - `src/OrderFlow.Api/appsettings.json`
 - `src/OrderFlow.Worker/appsettings.json`
 
-Ejemplo:
+Example:
 
 ```json
 {
@@ -90,41 +90,41 @@ Ejemplo:
 }
 ```
 
-Para contenedores, se recomienda pasarla por variable de entorno:
+For containers, pass the connection string through an environment variable:
 
 ```powershell
 -e "ConnectionStrings__OrderFlowDb=Server=host.docker.internal;Database=OrderFlowDb;User Id=sa;Password=your_password;TrustServerCertificate=True;"
 ```
 
-## Base de datos
+## Database
 
-Aplicar migraciones:
+Apply migrations:
 
 ```powershell
 dotnet ef database update --project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --startup-project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj
 ```
 
-Crear una migracion futura:
+Create a future migration:
 
 ```powershell
-dotnet ef migrations add NombreDeLaMigracion --project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --startup-project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --output-dir Migrations
+dotnet ef migrations add MigrationName --project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --startup-project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --output-dir Migrations
 ```
 
-Generar script SQL:
+Generate a SQL script:
 
 ```powershell
-dotnet ef migrations script --project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --startup-project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --output .\src\OrderFlow.Persistence\Scripts\NombreDeLaMigracion.sql
+dotnet ef migrations script --project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --startup-project .\src\OrderFlow.Persistence\OrderFlow.Persistence.csproj --output .\src\OrderFlow.Persistence\Scripts\MigrationName.sql
 ```
 
-## Compilacion
+## Build
 
-Desde la raiz del repositorio:
+From the repository root:
 
 ```powershell
 dotnet build .\src\OrderFlowAPI.slnx
 ```
 
-## Ejecucion local
+## Local Execution
 
 API:
 
@@ -138,11 +138,11 @@ Worker:
 dotnet run --project .\src\OrderFlow.Worker\OrderFlow.Worker.csproj
 ```
 
-En ambiente de desarrollo, OpenAPI queda disponible segun la configuracion de ASP.NET Core.
+In the Development environment, the OpenAPI document is available according to the ASP.NET Core configuration.
 
 ## Endpoints
 
-### Crear operacion
+### Create an Operation
 
 ```http
 POST /api/operations
@@ -160,46 +160,46 @@ Request:
 }
 ```
 
-Respuestas:
+Responses:
 
 - `201 Created`
 - `400 Bad Request`
 
-### Consultar operacion
+### Retrieve an Operation
 
 ```http
 GET /api/operations/{id}
 ```
 
-Respuestas:
+Responses:
 
 - `200 OK`
 - `404 Not Found`
 
-### Consultar estado
+### Retrieve Operation Status
 
 ```http
 GET /api/operations/{id}/status
 ```
 
-Respuestas:
+Responses:
 
 - `200 OK`
 - `404 Not Found`
 
-### Reintentar operacion fallida
+### Retry a Failed Operation
 
 ```http
 POST /api/operations/{id}/retry
 ```
 
-Respuestas:
+Responses:
 
 - `200 OK`
 - `404 Not Found`
 - `409 Conflict`
 
-## Estados de operacion
+## Operation Statuses
 
 - `Pending`
 - `Processing`
@@ -209,31 +209,31 @@ Respuestas:
 
 ## Docker
 
-Build:
+Build each image individually:
 
 ```powershell
 docker build -f .\src\OrderFlow.Api\Dockerfile -t orderflow-api .
 docker build -f .\src\OrderFlow.Worker\Dockerfile -t orderflow-worker .
 ```
 
-Para el entorno local MVP 2, definir `ACCEPT_EULA`, `MSSQL_SA_PASSWORD` y `ORDERFLOW_DB_CONNECTION_STRING`, y ejecutar:
+For the local MVP 2 environment, define `ACCEPT_EULA`, `MSSQL_SA_PASSWORD`, and `ORDERFLOW_DB_CONNECTION_STRING`, then run:
 
 ```powershell
 docker compose up --build
 ```
 
-La base `OrderFlowDb` permanece externa al Compose y debe tener las migraciones aplicadas.
+`OrderFlowDb` remains external to Docker Compose and must be available with migrations applied.
 
-## Limitaciones conocidas
+## Known Limitations
 
-- El emulador es solo para desarrollo local; no es un broker de produccion.
-- `OrderFlowDb` debe estar disponible fuera de los contenedores y con migraciones aplicadas.
-- No hay autenticacion avanzada.
-- No hay integraciones reales con terceros.
+- The emulator is for local development only and is not a production broker.
+- `OrderFlowDb` must be available outside the containers and have migrations applied.
+- Advanced authentication is not implemented.
+- There are no real third-party integrations.
 
-## Proximas mejoras posibles
+## Possible Next Improvements
 
-- Agregar autenticacion.
-- Agregar tests automatizados.
-- Agregar manejo global de errores.
-- Mejorar observabilidad.
+- Add authentication.
+- Add automated tests.
+- Add global error handling.
+- Improve observability.
