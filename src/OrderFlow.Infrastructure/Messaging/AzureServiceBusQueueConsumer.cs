@@ -82,15 +82,29 @@ public sealed class AzureServiceBusQueueConsumer : IOperationQueueConsumer, IAsy
         ILogger logger) : IOperationQueueMessage
     {
         private int _settled;
+        private int _settling;
 
         public Guid OperationId { get; } = operationId;
 
         public async Task CompleteAsync(CancellationToken cancellationToken)
         {
-            if (Interlocked.Exchange(ref _settled, 1) == 1)
+            if (!TryStartSettlement())
                 return;
 
-            await receiver.CompleteMessageAsync(message, cancellationToken);
+            try
+            {
+                await receiver.CompleteMessageAsync(message, cancellationToken);
+                MarkAsSettled();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Operation message completion failed in Azure Service Bus: {OperationId}", OperationId);
+                throw;
+            }
+            finally
+            {
+                Volatile.Write(ref _settling, 0);
+            }
 
             logger.LogInformation(
                 "Operation message completed in Azure Service Bus: {OperationId}",
@@ -99,12 +113,25 @@ public sealed class AzureServiceBusQueueConsumer : IOperationQueueConsumer, IAsy
 
         public async Task AbandonAsync(CancellationToken cancellationToken)
         {
-            if (Interlocked.Exchange(ref _settled, 1) == 1)
+            if (!TryStartSettlement())
                 return;
 
-            await receiver.AbandonMessageAsync(
-                message,
-                cancellationToken: cancellationToken);
+            try
+            {
+                await receiver.AbandonMessageAsync(
+                    message,
+                    cancellationToken: cancellationToken);
+                MarkAsSettled();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Operation message abandon failed in Azure Service Bus: {OperationId}", OperationId);
+                throw;
+            }
+            finally
+            {
+                Volatile.Write(ref _settling, 0);
+            }
 
             logger.LogWarning(
                 "Operation message abandoned in Azure Service Bus: {OperationId}",
@@ -113,18 +140,42 @@ public sealed class AzureServiceBusQueueConsumer : IOperationQueueConsumer, IAsy
 
         public async Task DeadLetterAsync(string reason, CancellationToken cancellationToken)
         {
-            if (Interlocked.Exchange(ref _settled, 1) == 1)
+            if (!TryStartSettlement())
                 return;
 
-            await receiver.DeadLetterMessageAsync(
-                message,
-                reason,
-                cancellationToken: cancellationToken);
+            try
+            {
+                await receiver.DeadLetterMessageAsync(
+                    message,
+                    reason,
+                    cancellationToken: cancellationToken);
+                MarkAsSettled();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Operation message dead-lettering failed in Azure Service Bus: {OperationId} {Reason}", OperationId, reason);
+                throw;
+            }
+            finally
+            {
+                Volatile.Write(ref _settling, 0);
+            }
 
             logger.LogWarning(
                 "Operation message sent to Azure Service Bus dead-letter queue: {OperationId} {Reason}",
                 OperationId,
                 reason);
+        }
+
+        private bool TryStartSettlement()
+        {
+            return Volatile.Read(ref _settled) == 0
+                && Interlocked.CompareExchange(ref _settling, 1, 0) == 0;
+        }
+
+        private void MarkAsSettled()
+        {
+            Volatile.Write(ref _settled, 1);
         }
     }
 }
